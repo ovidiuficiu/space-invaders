@@ -1,0 +1,310 @@
+/* ---------- Base ---------- */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { touch-action: manipulation; overscroll-behavior: none; }
+
+body {
+  background: radial-gradient(ellipse at center, #0b0f2a 0%, #05060f 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  padding: 8px;
+}
+
+/* ---------- Starfield background ---------- */
+.stars {
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.8), transparent),
+    radial-gradient(1px 1px at 40% 70%, rgba(255,255,255,.6), transparent),
+    radial-gradient(1.5px 1.5px at 60% 20%, rgba(255,255,255,.7), transparent),
+    radial-gradient(1px 1px at 80% 50%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1.5px 1.5px at 30% 85%, rgba(255,255,255,.6), transparent),
+    radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,.8), transparent),
+    radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 70% 90%, rgba(255,255,255,.7), transparent);
+  animation: twinkle 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes twinkle {
+  from { opacity: .5; }
+  to { opacity: 1; }
+}
+
+/* ---------- Layout ---------- */
+.game-wrap {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  width: 100%;
+  max-width: 680px;
+}
+
+h1 {
+  color: #39ff8c;
+  text-shadow: 0 0 10px #39ff8c, 0 0 30px #39ff8c55, 0 0 60px #39ff8c33;
+  font-size: 2rem;
+  letter-spacing: 10px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+/* ---------- HUD ---------- */
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #aaf0ff;
+  font-size: .95rem;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(170,240,255,.25);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hud span { font-weight: bold; color: #ffd54f; text-shadow: 0 0 8px #ffd54f88; }
+.hud .lives { color: #ff6b6b; text-shadow: 0 0 8px #ff6b6b88; }
+.hud .level { color: #c792ea; text-shadow: 0 0 8px #c792ea88; }
+.hud .diff { color: #39ff8c; text-shadow: 0 0 8px #39ff8c88; }
+.hud .super { color: #c792ea; text-shadow: 0 0 8px #c792ea88; }
+
+/* ---------- Stage & canvas ---------- */
+.stage {
+  position: relative;
+  width: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: radial-gradient(ellipse at 50% 30%, #10133a 0%, #05060f 100%);
+  border: 2px solid rgba(170,240,255,.3);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(57,255,140,.15), 0 0 60px rgba(57,255,140,.08);
+  cursor: none;
+  touch-action: none;
+}
+
+.pause-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  font-size: 1.2rem;
+  background: rgba(0,0,0,.45);
+  color: #aaf0ff;
+  border: 1px solid rgba(170,240,255,.35);
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pause-btn:active { background: rgba(170,240,255,.25); }
+
+/* ---------- Desktop controls ---------- */
+.controls {
+  color: #7f8bb3;
+  margin-top: 10px;
+  font-size: .8rem;
+  letter-spacing: 1px;
+}
+
+.controls b { color: #aaf0ff; }
+
+.mute-btn {
+  margin-top: 10px;
+  background: rgba(255,255,255,.06);
+  color: #aaf0ff;
+  border: 1px solid rgba(170,240,255,.3);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: 'Courier New', monospace;
+  font-size: .85rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all .15s ease;
+}
+.mute-btn:hover { background: rgba(170,240,255,.15); box-shadow: 0 0 12px rgba(170,240,255,.3); }
+
+/* ---------- Touch controls (shown on touch devices / small screens) ---------- */
+.touch-controls {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  gap: 12px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.touch-controls.visible { display: flex; }
+
+.tc-group {
+  display: flex;
+  gap: 10px;
+}
+.tc-btn {
+  min-width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  font-size: 1.6rem;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  background: rgba(255,255,255,.08);
+  color: #aaf0ff;
+  border: 2px solid rgba(170,240,255,.35);
+  cursor: pointer;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 0 rgba(0,0,0,.4);
+  transition: transform .05s ease, background .1s ease;
+}
+.tc-btn:active, .tc-btn.pressed {
+  transform: translateY(3px);
+  background: rgba(170,240,255,.3);
+  box-shadow: 0 1px 0 rgba(0,0,0,.4);
+}
+.tc-btn.small {
+  min-width: 52px;
+  height: 52px;
+  font-size: 1.1rem;
+}
+.tc-btn.fire {
+  min-width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  color: #0b0f2a;
+  background: linear-gradient(180deg, #ff6b6b, #e63946);
+  border-color: #ff9a9a;
+  box-shadow: 0 6px 0 #b3252f, 0 0 20px rgba(255,107,107,.5);
+}
+.tc-btn.fire:active, .tc-btn.fire.pressed {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #b3252f;
+}
+.tc-btn.back { color: #ffb703; border-color: rgba(255,183,3,.4); }
+
+.touch-hint {
+  display: none;
+  color: #7f8bb3;
+  font-size: .72rem;
+  margin-top: 8px;
+  letter-spacing: .5px;
+}
+
+@media (pointer: coarse), (max-width: 860px) {
+  .touch-controls { display: flex; }
+  .controls { display: none; }
+}
+@media (pointer: coarse) {
+  .touch-hint { display: block; }
+}
+
+/* Landscape phones: keep everything compact */
+@media (max-height: 500px) {
+  body { padding: 4px; }
+  h1 { font-size: 1.3rem; letter-spacing: 6px; margin-bottom: 6px; }
+  .hud { font-size: .75rem; padding: 5px 8px; }
+  .game-wrap { max-width: 92vw; }
+  .tc-btn { min-width: 52px; height: 52px; font-size: 1.3rem; }
+  .tc-btn.fire { min-width: 76px; height: 76px; font-size: .9rem; }
+  .touch-controls { margin-top: 6px; }
+}
+  /* ---------- Options menu ---------- */
+  .options-btn {
+    margin-top: 10px;
+    background: rgba(255,255,255,.06);
+    color: #c792ea;
+    border: 1px solid rgba(199,146,234,.4);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: .85rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all .15s ease;
+  }
+  .options-btn:hover { background: rgba(199,146,234,.15); box-shadow: 0 0 12px rgba(199,146,234,.35); }
+
+  .options-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5,6,15,.75);
+    backdrop-filter: blur(3px);
+  }
+  .options-overlay[hidden] { display: none; }
+
+  .options-panel {
+    width: min(90vw, 400px);
+    background: rgba(10,14,40,.96);
+    border: 2px solid rgba(199,146,234,.5);
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(199,146,234,.3);
+    padding: 26px 28px 22px;
+    text-align: center;
+    color: #aaf0ff;
+    font-family: 'Courier New', monospace;
+  }
+  .options-panel h2 {
+    color: #c792ea;
+    letter-spacing: 6px;
+    font-size: 1.4rem;
+    margin-bottom: 22px;
+    text-shadow: 0 0 12px rgba(199,146,234,.7);
+  }
+  .options-panel label {
+    display: block;
+    letter-spacing: 2px;
+    font-size: .9rem;
+    margin-bottom: 14px;
+  }
+  .options-panel input[type="range"] {
+    width: 100%;
+    accent-color: #39ff8c;
+    cursor: pointer;
+  }
+  .vol-label {
+    display: inline-block;
+    margin: 12px 0 20px;
+    color: #39ff8c;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+  .options-close {
+    background: rgba(255,255,255,.06);
+    color: #aaf0ff;
+    border: 1px solid rgba(170,240,255,.3);
+    border-radius: 6px;
+    padding: 8px 22px;
+    font-family: 'Courier New', monospace;
+    font-size: .85rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .options-close:hover { background: rgba(170,240,255,.15); box-shadow: 0 0 12px rgba(170,240,255,.3); }
