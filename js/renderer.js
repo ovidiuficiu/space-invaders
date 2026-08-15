@@ -26,7 +26,7 @@ export class Renderer {
     // ---- main frame ----
     render(view) {
         const ctx = this.ctx;
-        const { state, player, grid, ufo, playerShots, invaderShots, powerups, particles, shields, menuStep, difficultyIdx, superIdx } = view;
+        const { state, player, grid, ufo, playerShots, invaderShots, powerups, particles, shields, menuStep, difficultyIdx, superIdx, isTouch } = view;
 
         ctx.clearRect(0, 0, W, H);
         this.drawGrid();
@@ -64,7 +64,7 @@ export class Renderer {
         if (state.running && player.powerup) this.drawPowerupTimer(player);
 
         // overlays
-        if (!state.running && !state.gameOver) this.drawStartScreen(state, menuStep, difficultyIdx, superIdx);
+        if (!state.running && !state.gameOver) this.drawStartScreen(state, menuStep, difficultyIdx, superIdx, isTouch);
         if (state.paused && state.running) this.drawPauseScreen();
         if (state.gameOver) this.drawGameOverScreen(state);
     }
@@ -197,7 +197,7 @@ export class Renderer {
         ctx.fillText(pu.name, W / 2, y + h + 14);
     }
 
-    drawStartScreen(state, menuStep, difficultyIdx, superIdx) {
+    drawStartScreen(state, menuStep, difficultyIdx, superIdx, isTouch) {
         const ctx = this.ctx;
         const currentDiff = this.currentDiff(difficultyIdx);
         const currentSuper = this.currentSuper(superIdx);
@@ -259,7 +259,7 @@ export class Renderer {
             }
             ctx.fillStyle = '#7f8bb3';
             ctx.font = '15px "Courier New", monospace';
-            ctx.fillText('↑ ↓ choose · tap / Enter to continue', W / 2, H - 18);
+            ctx.fillText(isTouch ? 'swipe ↑↓ choose · tap to continue' : '↑ ↓ choose · Enter to continue', W / 2, H - 18);
         }
 
         // ---------- Step 2: pick superpower ----------
@@ -310,7 +310,7 @@ export class Renderer {
             }
             ctx.fillStyle = '#7f8bb3';
             ctx.font = '15px "Courier New", monospace';
-            ctx.fillText('↑ ↓ choose · tap / Enter to start · Backspace back', W / 2, H - 18);
+            ctx.fillText(isTouch ? 'swipe ↑↓ choose · tap to start' : '↑ ↓ choose · Enter to start · Backspace back', W / 2, H - 18);
         }
     }
 

@@ -7,6 +7,8 @@ export class InputManager {
         this.canvas = canvas;
         this.keys = { left: false, right: false, space: false };
         this.steerX = null; // canvas-space X while dragging, else null
+        this.menuStartY = null;  // touch start Y while in the start menu
+        this.menuSwiped = false; // whether the current menu touch was a swipe
         this.cb = callbacks;
 
         this.btnPause = document.getElementById('pauseBtn');
@@ -73,33 +75,52 @@ export class InputManager {
         });
     }
 
-    // canvas: drag to steer; tap when game over -> back to menu
+    // canvas: drag to steer (gameplay); swipe up/down to choose + tap to
+    // confirm (start menu); tap when game over -> back to menu
     bindCanvas() {
         const canvas = this.canvas;
+        const SWIPE = 24; // vertical px to register one menu navigation step
+
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (this.cb.onAnyKey) this.cb.onAnyKey();
             const rect = canvas.getBoundingClientRect();
             this.steerX = (e.touches[0].clientX - rect.left) * (W / rect.width);
-            if (this.cb.isMenu && this.cb.isMenu() && this.cb.onConfirm) {
-                // tap in the start menu -> advance selection (no buttons on mobile)
-                this.cb.onConfirm();
+
+            if (this.cb.isMenu && this.cb.isMenu()) {
+                // in the start menu: swipe to choose, tap to continue (no buttons on mobile)
+                this.menuStartY = e.touches[0].clientY;
+                this.menuSwiped = false;
             } else if (this.cb.isGameOver && this.cb.isGameOver()) {
                 setTimeout(() => { if (this.cb.isGameOver() && this.cb.onConfirm) this.cb.onConfirm(); }, 200);
             }
         }, { passive: false });
+
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             this.steerX = (e.touches[0].clientX - rect.left) * (W / rect.width);
+
+            if (this.menuStartY !== null) {
+                const dy = e.touches[0].clientY - this.menuStartY;
+                if (Math.abs(dy) >= SWIPE) {
+                    if (this.cb.onNavigate) this.cb.onNavigate(dy < 0 ? -1 : 1);
+                    this.menuStartY = e.touches[0].clientY; // allow continued swiping
+                    this.menuSwiped = true;
+                }
+            }
         }, { passive: false });
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
+
+        const endTouch = () => {
+            if (this.menuStartY !== null) {
+                // a tap (no swipe) confirms/advances the menu
+                if (!this.menuSwiped && this.cb.onConfirm) this.cb.onConfirm();
+                this.menuStartY = null;
+                this.menuSwiped = false;
+            }
             this.steerX = null;
-        }, { passive: false });
-        canvas.addEventListener('touchcancel', (e) => {
-            e.preventDefault();
-            this.steerX = null;
-        }, { passive: false });
+        };
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); endTouch(); }, { passive: false });
+        canvas.addEventListener('touchcancel', (e) => { e.preventDefault(); endTouch(); }, { passive: false });
     }
 }

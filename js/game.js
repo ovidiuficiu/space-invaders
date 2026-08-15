@@ -403,7 +403,8 @@ export class Game {
             shields: this.shields.bunkers,
             menuStep: this.menu.step,
             difficultyIdx: this.menu.difficultyIdx,
-            superIdx: this.menu.superIdx
+            superIdx: this.menu.superIdx,
+            isTouch: this.input.isTouch
         };
     }
 
