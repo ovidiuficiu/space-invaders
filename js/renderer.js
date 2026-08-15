@@ -1,5 +1,13 @@
 import { W, H, DIFFICULTIES, SUPERPOWERS, POWERUP_TYPES, POWERUP_DURATION, SPRITES } from './config.js';
 
+// Start-menu layout. Shared between drawing and tap-to-select hit-testing so
+// the tappable rows always match what's on screen.
+const MENU = {
+    panelW: 460, panelH: 360, py: 150,
+    difficulty: { itemH: 76, startY: 92, boxTop: -28, boxH: 44 },
+    superpower: { itemH: 58, startY: 86, boxTop: -26, boxH: 40 }
+};
+
 // ---------- Renderer: all canvas drawing, no game logic ----------
 export class Renderer {
     constructor(canvas) {
@@ -9,7 +17,7 @@ export class Renderer {
     // ---- helpers ----
     currentDiff(difficultyIdx) { return DIFFICULTIES[difficultyIdx]; }
     currentSuper(superIdx) { return SUPERPOWERS[superIdx]; }
-    availablePowers(difficultyIdx) { return this.currentDiff(difficultyIdx).powers.map(i => SUPERPOWERS[i]); }
+    availablePowers() { return SUPERPOWERS; }
 
     drawPixelArt(dx, dy, scale, palette, grid) {
         const ctx = this.ctx;
@@ -60,8 +68,8 @@ export class Renderer {
         }
         ctx.globalAlpha = 1;
 
-        // active timed powerup indicator
-        if (state.running && player.powerup) this.drawPowerupTimer(player);
+        // active timed powerup indicators (stacked)
+        if (state.running && player.activePowers.size > 0) this.drawPowerupTimer(player);
 
         // overlays
         if (!state.running && !state.gameOver) this.drawStartScreen(state, menuStep, difficultyIdx, superIdx, isTouch);
@@ -179,22 +187,32 @@ export class Renderer {
 
     drawPowerupTimer(player) {
         const ctx = this.ctx;
-        const pu = POWERUP_TYPES.find(t => t.id === player.powerup);
-        const frac = player.powerupTime / POWERUP_DURATION;
-        const w = 140, h = 12, x = W / 2 - w / 2, y = 10;
-        ctx.fillStyle = 'rgba(0,0,0,.55)';
-        ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
-        ctx.fillStyle = 'rgba(255,255,255,.15)';
-        ctx.fillRect(x, y, w, h);
-        ctx.fillStyle = pu.color;
-        ctx.fillRect(x, y, w * frac, h);
-        ctx.strokeStyle = pu.color;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, w, h);
-        ctx.fillStyle = pu.color;
-        ctx.font = 'bold 12px "Courier New", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(pu.name, W / 2, y + h + 14);
+        const entries = [...player.activePowers.entries()];
+        if (entries.length === 0) return;
+        const chipW = 96, chipH = 30, gap = 8;
+        const totalW = entries.length * chipW + (entries.length - 1) * gap;
+        let x = W / 2 - totalW / 2;
+        const y = 8;
+        for (const [id, t] of entries) {
+            const pu = POWERUP_TYPES.find(p => p.id === id);
+            const frac = Math.max(0, Math.min(1, t / POWERUP_DURATION));
+            // chip background
+            ctx.fillStyle = 'rgba(0,0,0,.55)';
+            ctx.fillRect(x, y, chipW, chipH);
+            // label
+            ctx.fillStyle = pu.color;
+            ctx.font = 'bold 12px "Courier New", monospace';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(pu.name, x + 8, y + 11);
+            // remaining-time bar
+            ctx.fillStyle = 'rgba(255,255,255,.15)';
+            ctx.fillRect(x + 6, y + chipH - 8, chipW - 12, 4);
+            ctx.fillStyle = pu.color;
+            ctx.fillRect(x + 6, y + chipH - 8, (chipW - 12) * frac, 4);
+            x += chipW + gap;
+        }
+        ctx.textBaseline = 'alphabetic';
     }
 
     drawStartScreen(state, menuStep, difficultyIdx, superIdx, isTouch) {
@@ -214,8 +232,8 @@ export class Renderer {
         ctx.fillText('SPACE INVADERS', W / 2, 104);
         ctx.shadowBlur = 0;
 
-        const panelW = 460, panelH = 360;
-        const px = (W - panelW) / 2, py = 150;
+        const panelW = MENU.panelW, panelH = MENU.panelH;
+        const px = (W - panelW) / 2, py = MENU.py;
 
         // ---------- Step 1: pick difficulty ----------
         if (menuStep === 0) {
@@ -229,16 +247,17 @@ export class Renderer {
             ctx.font = 'bold 26px "Courier New", monospace';
             ctx.fillText('SELECT DIFFICULTY', W / 2, py + 34);
 
-            const itemH = 76, startY = py + 92;
+            const dm = MENU.difficulty;
+            const itemH = dm.itemH, startY = py + dm.startY;
             DIFFICULTIES.forEach((d, i) => {
                 const y = startY + i * itemH;
                 const selected = i === difficultyIdx;
                 if (selected) {
                     ctx.fillStyle = 'rgba(57,255,140,.12)';
-                    ctx.fillRect(px + 14, y - 28, panelW - 28, 44);
+                    ctx.fillRect(px + 14, y + dm.boxTop, panelW - 28, dm.boxH);
                     ctx.strokeStyle = d.color;
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(px + 14, y - 28, panelW - 28, 44);
+                    ctx.strokeRect(px + 14, y + dm.boxTop, panelW - 28, dm.boxH);
                 }
                 ctx.textAlign = 'left';
                 ctx.fillStyle = selected ? d.color : '#7f8bb3';
@@ -254,12 +273,12 @@ export class Renderer {
                 ctx.fillStyle = '#39ff8c';
                 ctx.font = 'bold 18px "Courier New", monospace';
                 ctx.shadowColor = '#39ff8c'; ctx.shadowBlur = 10;
-                ctx.fillText('TAP / ENTER TO CONTINUE', W / 2, py + panelH + 34);
+                ctx.fillText(isTouch ? 'TAP A ROW · PRESS CONFIRM' : 'PRESS ENTER TO CONTINUE', W / 2, py + panelH + 34);
                 ctx.shadowBlur = 0;
             }
             ctx.fillStyle = '#7f8bb3';
             ctx.font = '15px "Courier New", monospace';
-            ctx.fillText(isTouch ? 'swipe ↑↓ choose · tap to continue' : '↑ ↓ choose · Enter to continue', W / 2, H - 18);
+            ctx.fillText(isTouch ? 'tap to highlight · swipe to browse' : '↑ ↓ choose · Enter to continue', W / 2, H - 18);
         }
 
         // ---------- Step 2: pick superpower ----------
@@ -280,16 +299,17 @@ export class Renderer {
             ctx.fillText('for ' + currentDiff.name + ' difficulty', W / 2, py + 56);
 
             const powers = availablePowers;
-            const itemH = 58, startY = py + 86;
+            const sm = MENU.superpower;
+            const itemH = sm.itemH, startY = py + sm.startY;
             powers.forEach((p, i) => {
                 const y = startY + i * itemH;
                 const selected = p.id === currentSuper.id;
                 if (selected) {
                     ctx.fillStyle = 'rgba(199,146,234,.12)';
-                    ctx.fillRect(px + 14, y - 26, panelW - 28, 40);
+                    ctx.fillRect(px + 14, y + sm.boxTop, panelW - 28, sm.boxH);
                     ctx.strokeStyle = p.color;
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(px + 14, y - 26, panelW - 28, 40);
+                    ctx.strokeRect(px + 14, y + sm.boxTop, panelW - 28, sm.boxH);
                 }
                 ctx.textAlign = 'left';
                 ctx.fillStyle = selected ? p.color : '#7f8bb3';
@@ -305,13 +325,32 @@ export class Renderer {
                 ctx.fillStyle = '#39ff8c';
                 ctx.font = 'bold 18px "Courier New", monospace';
                 ctx.shadowColor = '#39ff8c'; ctx.shadowBlur = 10;
-                ctx.fillText('TAP / ENTER TO START', W / 2, py + panelH + 34);
+                ctx.fillText(isTouch ? 'TAP A ROW · PRESS CONFIRM' : 'PRESS ENTER TO START', W / 2, py + panelH + 34);
                 ctx.shadowBlur = 0;
             }
             ctx.fillStyle = '#7f8bb3';
             ctx.font = '15px "Courier New", monospace';
-            ctx.fillText(isTouch ? 'swipe ↑↓ choose · tap to start' : '↑ ↓ choose · Enter to start · Backspace back', W / 2, H - 18);
+            ctx.fillText(isTouch ? 'tap to highlight · swipe to browse' : '↑ ↓ choose · Enter to start · Backspace back', W / 2, H - 18);
         }
+    }
+
+    // Hit-test rects for the current start-menu rows (used for tap-to-select).
+    // Must stay in sync with the layout drawn in drawStartScreen (same MENU consts).
+    menuRows(menuStep, difficultyIdx, superIdx) {
+        const panelW = MENU.panelW;
+        const px = (W - panelW) / 2;
+        if (menuStep === 0) {
+            const { itemH, startY, boxTop, boxH } = MENU.difficulty;
+            return DIFFICULTIES.map((d, i) => {
+                const y = MENU.py + startY + i * itemH;
+                return { index: i, id: i, name: d.name, x: px + 14, y: y + boxTop, w: panelW - 28, h: boxH };
+            });
+        }
+        const { itemH, startY, boxTop, boxH } = MENU.superpower;
+        return this.availablePowers(difficultyIdx).map((p, i) => {
+            const y = MENU.py + startY + i * itemH;
+            return { index: i, id: p.id, name: p.name, x: px + 14, y: y + boxTop, w: panelW - 28, h: boxH };
+        });
     }
 
     drawPauseScreen() {

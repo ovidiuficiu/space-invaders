@@ -75,6 +75,7 @@ export class Game {
             onBack: () => this.menuBack(),
             onPause: () => this.togglePause(),
             onConfirm: () => this.menuConfirm(),
+            onTap: (x, y) => this.onTap(x, y),
             isMenu: () => !this.state.running && !this.state.gameOver,
             isPlaying: () => this.state.running && !this.state.gameOver,
             isGameOver: () => this.state.gameOver,
@@ -199,7 +200,7 @@ export class Game {
             if (rectsOverlap(s, this.player)) {
                 this.invaderShots.splice(i, 1);
                 this.playerHit();
-                continue;
+                break; // playerHit clears the array; nothing left to check
             }
 
             // vs shields
@@ -229,10 +230,10 @@ export class Game {
                 this.powerups.splice(i, 1);
             }
         }
-        // timed powerup countdown
-        if (this.player.powerupTime > 0) {
-            this.player.powerupTime--;
-            if (this.player.powerupTime <= 0) this.player.powerup = null;
+        // timed powerup countdown (each stacked power ticks & expires independently)
+        for (const [id, t] of this.player.activePowers) {
+            if (t - 1 <= 0) this.player.activePowers.delete(id);
+            else this.player.activePowers.set(id, t - 1);
         }
     }
 
@@ -241,8 +242,8 @@ export class Game {
             this.state.lives++;
             this.dom.lives.textContent = String(this.state.lives);
         } else {
-            this.player.powerup = type.id;
-            this.player.powerupTime = POWERUP_DURATION;
+            // powers stack: a new one is added, re-collecting one refreshes its timer
+            this.player.activePowers.set(type.id, POWERUP_DURATION);
         }
     }
 
@@ -287,7 +288,9 @@ export class Game {
     // ---- game flow ----
     resetLevel() {
         this.grid.reset();
-        this.grid.speed = this.menu.currentDiff().speed + (this.state.level - 1) * 0.15;
+        const diff = this.menu.currentDiff();
+        this.grid.speed = diff.speed + (this.state.level - 1) * 0.15;
+        this.grid.drop = 9 + diff.speed * 14;
         this.shields.build();
         this.playerShots = [];
         this.invaderShots = [];
@@ -312,13 +315,13 @@ export class Game {
         this.dom.super.style.color = this.menu.currentSuper().color;
         this.player.x = W / 2 - this.player.w / 2;
         this.player.shield = this.menu.currentSuper().id === 'shield' ? 2 : 0;
-        this.player.powerup = null;
-        this.player.powerupTime = 0;
+        this.player.activePowers.clear();
         this.playerShots = [];
         this.invaderShots = [];
         this.powerups = [];
         this.resetLevel();
         this.updateBackBtn();
+        this.updateMenuControls();
     }
 
     nextLevel() {
@@ -335,12 +338,27 @@ export class Game {
         this.dom.high.textContent = String(this.state.high).padStart(4, '0');
         this.particles.spawn(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff6b6b', 40, 5);
         this.updateBackBtn();
+        this.updateMenuControls();
     }
 
     // ---- menu (state + selection logic lives in the Menu class) ----
     menuNavigate(dir) {
         if (this.state.running || this.state.gameOver) return;
         this.menu.navigate(dir);
+        this.syncMenuDOM();
+    }
+
+    // touch tap on a start-menu row: highlight it (confirm happens via the button)
+    onTap(x, y) {
+        if (this.state.running || this.state.gameOver) return;
+        const rows = this.renderer.menuRows(this.menu.step, this.menu.difficultyIdx, this.menu.superIdx);
+        const hit = rows.find(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
+        if (!hit) return; // tapping outside the rows does nothing
+        if (this.menu.step === 0) {
+            this.menu.selectDifficulty(hit.index);
+        } else {
+            this.menu.selectSuper(hit.id);
+        }
         this.syncMenuDOM();
     }
 
@@ -352,12 +370,14 @@ export class Game {
             this.state.gameOver = false;
             this.menu.reset();
             this.updateBackBtn();
+            this.updateMenuControls();
         } else if (!this.state.running) {
             if (this.menu.confirm()) {
                 this.startGame();
             } else {
                 this.syncMenuDOM();
                 this.updateBackBtn();
+                this.updateMenuControls();
             }
         }
     }
@@ -365,6 +385,7 @@ export class Game {
     menuBack() {
         if (!this.state.running && !this.state.gameOver && this.menu.back()) {
             this.updateBackBtn();
+            this.updateMenuControls();
         }
     }
 
@@ -376,6 +397,7 @@ export class Game {
         this.menu.reset();
         this.hidePauseMenu();
         this.updateBackBtn();
+        this.updateMenuControls();
     }
 
     // mirror the selected difficulty/superpower into the HUD
@@ -387,6 +409,16 @@ export class Game {
 
     updateBackBtn() {
         if (this.optionsBtn) this.optionsBtn.style.display = this.state.running ? 'none' : 'inline-block';
+    }
+
+    // mobile start-menu confirm/back buttons (touch devices have no Enter)
+    updateMenuControls() {
+        if (!this.menuControls) return;
+        const inMenu = !this.state.running && !this.state.gameOver;
+        this.menuControls.hidden = !(inMenu && this.input.isTouch);
+        if (this.menuBackBtn) {
+            this.menuBackBtn.style.display = (inMenu && this.menu.step === 1) ? '' : 'none';
+        }
     }
 
     // ---- render view ----
@@ -484,6 +516,14 @@ export class Game {
         if (restartBtn) restartBtn.addEventListener('click', () => this.quitToMenu());
         if (quitBtn) quitBtn.addEventListener('click', () => this.quitToMenu());
         this.hidePauseMenu();
+
+        // mobile start-menu confirm/back buttons
+        this.menuControls = document.getElementById('menuControls');
+        this.menuBackBtn = document.getElementById('menuBack');
+        this.menuConfirmBtn = document.getElementById('menuConfirm');
+        if (this.menuConfirmBtn) this.menuConfirmBtn.addEventListener('click', () => this.menuConfirm());
+        if (this.menuBackBtn) this.menuBackBtn.addEventListener('click', () => this.menuBack());
+        this.updateMenuControls();
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Escape' && this.optionsOverlay && !this.optionsOverlay.hidden) {
                 this.optionsOverlay.hidden = true;

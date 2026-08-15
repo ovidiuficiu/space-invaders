@@ -9,6 +9,7 @@ export class InvaderGrid {
         this.speed = 0.7;    // px per frame
         this.drop = 18;
         this.moveTimer = 0;
+        this.shootTimer = 60; // frames until the first invader shot
         this.build();
     }
 
@@ -22,8 +23,7 @@ export class InvaderGrid {
                     w: INVADER_W, h: INVADER_H,
                     type: r < 1 ? 3 : r < 3 ? 2 : 1, // top = squid(3), mid = crab(2), bottom = octopus(1)
                     alive: true,
-                    frame: 0,
-                    shootTimer: Math.random() * 400 + 200
+                    frame: 0
                 });
             }
         }
@@ -33,6 +33,7 @@ export class InvaderGrid {
         this.build();
         this.dir = 1;
         this.moveTimer = 0;
+        this.shootTimer = 60;
     }
 
     alive() {
@@ -49,7 +50,7 @@ export class InvaderGrid {
         if (this.invaders.length === 0) return { reachedPlayer: false };
         this.moveTimer++;
         const speed = this.speed * (0.9 + level * 0.12);
-        if (this.moveTimer >= Math.max(6, 26 - this.speed * 4)) {
+        if (this.moveTimer >= Math.max(4, Math.round(26 - this.speed * 13))) {
             this.moveTimer = 0;
             let edge = false;
             for (const inv of this.invaders) {
@@ -67,13 +68,14 @@ export class InvaderGrid {
             for (const inv of this.invaders) inv.frame = inv.frame === 0 ? 1 : 0;
         }
 
-        // invader shooting
+        // invader shooting: one formation-level timer, so the fire rate is
+        // predictable and scales cleanly with difficulty
         const alive = this.alive();
         if (alive.length > 0) {
-            const shooter = alive[Math.floor(Math.random() * alive.length)];
-            shooter.shootTimer -= 1;
-            if (shooter.shootTimer <= 0) {
-                shooter.shootTimer = Math.max(difficulty.shootMin, difficulty.shootBase - level * 30) * (0.5 + Math.random() * 0.7);
+            this.shootTimer--;
+            if (this.shootTimer <= 0) {
+                this.shootTimer = Math.max(difficulty.shootMin, difficulty.shootBase - level * 30) * (0.5 + Math.random() * 0.7);
+                const shooter = alive[Math.floor(Math.random() * alive.length)];
                 // aim from the bottom-most invader in the shooter's column
                 const colShooters = alive.filter(i => Math.abs(i.x - shooter.x) < 20);
                 const bottom = colShooters.reduce((a, b) => (a.y > b.y ? a : b), shooter);

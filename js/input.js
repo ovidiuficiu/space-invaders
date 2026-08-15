@@ -1,4 +1,4 @@
-import { W } from './config.js';
+import { W, H } from './config.js';
 
 // ---------- Input: keyboard, touch buttons, and canvas drag-to-steer ----------
 // Decoupled from game logic via callbacks. Never mutates game state directly.
@@ -9,6 +9,8 @@ export class InputManager {
         this.steerX = null; // canvas-space X while dragging, else null
         this.menuStartY = null;  // touch start Y while in the start menu
         this.menuSwiped = false; // whether the current menu touch was a swipe
+        this.tapX = 0;  // last tap position in canvas space
+        this.tapY = 0;
         this.cb = callbacks;
 
         this.btnPause = document.getElementById('pauseBtn');
@@ -79,16 +81,18 @@ export class InputManager {
     // confirm (start menu); tap when game over -> back to menu
     bindCanvas() {
         const canvas = this.canvas;
-        const SWIPE = 24; // vertical px to register one menu navigation step
+        const SWIPE = 16; // vertical px to register one menu navigation step
 
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (this.cb.onAnyKey) this.cb.onAnyKey();
             const rect = canvas.getBoundingClientRect();
             this.steerX = (e.touches[0].clientX - rect.left) * (W / rect.width);
+            this.tapX = this.steerX;
+            this.tapY = (e.touches[0].clientY - rect.top) * (H / rect.height);
 
             if (this.cb.isMenu && this.cb.isMenu()) {
-                // in the start menu: swipe to choose, tap to continue (no buttons on mobile)
+                // in the start menu: swipe to browse, tap a row to select (no buttons on mobile)
                 this.menuStartY = e.touches[0].clientY;
                 this.menuSwiped = false;
             } else if (this.cb.isGameOver && this.cb.isGameOver()) {
@@ -113,8 +117,11 @@ export class InputManager {
 
         const endTouch = () => {
             if (this.menuStartY !== null) {
-                // a tap (no swipe) confirms/advances the menu
-                if (!this.menuSwiped && this.cb.onConfirm) this.cb.onConfirm();
+                // a tap (no swipe) selects the tapped row, or falls back to advancing
+                if (!this.menuSwiped) {
+                    if (this.cb.onTap) this.cb.onTap(this.tapX, this.tapY);
+                    else if (this.cb.onConfirm) this.cb.onConfirm();
+                }
                 this.menuStartY = null;
                 this.menuSwiped = false;
             }

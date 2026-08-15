@@ -12,23 +12,30 @@ export class Menu {
 
     currentDiff() { return DIFFICULTIES[this.difficultyIdx]; }
     currentSuper() { return SUPERPOWERS[this.superIdx]; }
-    availablePowers() { return this.currentDiff().powers.map(i => SUPERPOWERS[i]); }
+    // every superpower is always available, regardless of difficulty
+    availablePowers() { return SUPERPOWERS; }
 
     // Move the selection up/down (dir = -1 | 1)
     navigate(dir) {
         if (this.step === 0) {
             this.difficultyIdx = (this.difficultyIdx + dir + DIFFICULTIES.length) % DIFFICULTIES.length;
-            // snap the superpower to the first one available for this difficulty
-            const firstPower = this.availablePowers()[0];
-            if (firstPower.id !== this.currentSuper().id) {
-                this.superIdx = SUPERPOWERS.indexOf(firstPower);
-            }
         } else {
             const powers = this.availablePowers();
             const cur = powers.findIndex(p => p.id === this.currentSuper().id);
             const next = powers[(cur + dir + powers.length) % powers.length];
             this.superIdx = SUPERPOWERS.indexOf(next);
         }
+    }
+
+    // Directly pick a difficulty by its index (tap-to-select).
+    selectDifficulty(index) {
+        this.difficultyIdx = index;
+    }
+
+    // Directly pick a superpower by id (tap-to-select).
+    selectSuper(id) {
+        const idx = SUPERPOWERS.findIndex(p => p.id === id);
+        if (idx !== -1) this.superIdx = idx;
     }
 
     // Advance one menu step. Returns true when the game should start.

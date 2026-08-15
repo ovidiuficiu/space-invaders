@@ -120,6 +120,47 @@ canvas {
 }
 .pause-btn:active { background: rgba(170,240,255,.25); }
 
+/* ---------- Mobile start-menu confirm/back buttons ---------- */
+.menu-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.menu-controls[hidden] { display: none; }
+
+.menu-btn {
+  min-width: 112px;
+  padding: 9px 14px;
+  font-family: 'Courier New', monospace;
+  font-size: .88rem;
+  letter-spacing: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+  color: #aaf0ff;
+  background: rgba(10,14,40,.85);
+  border: 2px solid rgba(170,240,255,.35);
+  text-shadow: 0 0 8px rgba(170,240,255,.45);
+  transition: all .15s ease;
+}
+.menu-btn:hover { background: rgba(170,240,255,.12); box-shadow: 0 0 14px rgba(170,240,255,.25); }
+.menu-btn:active { transform: translateY(1px); }
+
+.menu-btn#menuBack {
+  color: #ffd54f;
+  border-color: rgba(255,213,79,.45);
+  text-shadow: 0 0 8px rgba(255,213,79,.5);
+}
+.menu-btn#menuBack:hover { background: rgba(255,213,79,.12); box-shadow: 0 0 14px rgba(255,213,79,.3); }
+
+.menu-btn.primary {
+  color: #39ff8c;
+  border-color: rgba(57,255,140,.5);
+  text-shadow: 0 0 10px rgba(57,255,140,.6);
+}
+.menu-btn.primary:hover { background: rgba(57,255,140,.14); box-shadow: 0 0 16px rgba(57,255,140,.35); }
+
 /* ---------- Desktop controls ---------- */
 .controls {
   color: #7f8bb3;

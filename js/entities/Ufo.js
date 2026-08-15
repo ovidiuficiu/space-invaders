@@ -27,14 +27,14 @@ export class Ufo {
 
     update(level) {
         this.timer++;
-        if (!this.active && this.timer > 700 + Math.random() * 400) {
+        if (!this.active && this.timer > 130 + Math.random() * 90) {
             this.x = -50;
             this.y = 38;
             this.dir = Math.random() > 0.5 ? 1 : -1;
             this.timer = 0;
         }
         if (this.active) {
-            this.x += this.dir * (2.2 + level * 0.2);
+            this.x += this.dir * (1.6 + level * 0.12);
             if (this.x < -60 || this.x > W + 60) this.x = null;
         }
     }

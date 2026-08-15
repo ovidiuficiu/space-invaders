@@ -13,10 +13,10 @@ export const STORAGE_KEYS = {
 
 // ---------- Difficulty & superpower menu data ----------
 export const DIFFICULTIES = [
-    { name: 'EASY', speed: 0.5, shootBase: 720, shootMin: 200, color: '#39ff8c', desc: 'slow invaders, rare shots', powers: [0, 1, 2, 3, 4] },
-    { name: 'NORMAL', speed: 0.75, shootBase: 480, shootMin: 120, color: '#ffd54f', desc: 'classic arcade pace', powers: [0, 1, 2, 3, 4] },
-    { name: 'HARD', speed: 1.0, shootBase: 300, shootMin: 75, color: '#ff8a3d', desc: 'fast, trigger-happy aliens', powers: [0, 2, 3] },
-    { name: 'INSANE', speed: 1.3, shootBase: 180, shootMin: 45, color: '#ff5f8f', desc: 'bullet hell', powers: [3] }
+    { name: 'EASY', speed: 0.55, shootBase: 650, shootMin: 300, color: '#39ff8c', desc: 'slow invaders, rare shots' },
+    { name: 'NORMAL', speed: 0.9, shootBase: 380, shootMin: 120, color: '#ffd54f', desc: 'classic arcade pace' },
+    { name: 'HARD', speed: 1.3, shootBase: 150, shootMin: 35, color: '#ff8a3d', desc: 'fast, trigger-happy aliens' },
+    { name: 'INSANE', speed: 1.6, shootBase: 60, shootMin: 12, color: '#ff5f8f', desc: 'bullet hell' }
 ];
 
 export const SUPERPOWERS = [
@@ -36,7 +36,7 @@ export const POWERUP_TYPES = [
     { id: 'rapid', label: 'R', color: '#ff8a3d', name: 'RAPID' },
     { id: 'life', label: '1', color: '#ff6b6b', name: '1UP' }
 ];
-export const POWERUP_DURATION = 600; // frames (~10s)
+export const POWERUP_DURATION = 900; // frames (~15s)
 
 // ---------- Player ----------
 export const PLAYER = {

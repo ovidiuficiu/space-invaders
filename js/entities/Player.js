@@ -12,8 +12,7 @@ export class Player {
         this.cooldown = 0;
         this.cooldownMax = PLAYER.cooldownMax;
         this.shield = 0;        // hit-shields from SHIELD superpower
-        this.powerup = null;     // active timed powerup id
-        this.powerupTime = 0;    // remaining frames
+        this.activePowers = new Map(); // stacked timed powerups: id -> remaining frames
     }
 
     center() {
@@ -28,15 +27,15 @@ export class Player {
         if (this.cooldown > 0) this.cooldown--;
     }
 
-    // Builds shots based on the chosen superpower + active powerup.
+    // Builds shots based on the chosen superpower + active powerups (which stack).
     // Sets the fire cooldown and returns the array of shots to add.
     fire(superPower) {
-        const pu = this.powerup;
-        const triple = superPower.id === 'triple' || pu === 'triple';
-        const split = pu === 'split';
-        const bounce = superPower.id === 'bounce' || pu === 'bounce';
-        const pierce = superPower.id === 'pierce' || pu === 'pierce';
-        const rapid = superPower.id === 'rapid' || pu === 'rapid';
+        const ap = this.activePowers;
+        const triple = superPower.id === 'triple' || ap.has('triple');
+        const split = ap.has('split');
+        const bounce = superPower.id === 'bounce' || ap.has('bounce');
+        const pierce = superPower.id === 'pierce' || ap.has('pierce');
+        const rapid = superPower.id === 'rapid' || ap.has('rapid');
 
         const mkShot = (angle) => Projectile.player(
             this.x + this.w / 2 - 2,

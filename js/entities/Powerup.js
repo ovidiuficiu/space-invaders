@@ -8,7 +8,7 @@ export class Powerup {
         this.y = y;
         this.w = 24;
         this.h = 18;
-        this.vy = 1.5;
+        this.vy = 1.9;
         this.wob = 0;
     }
 
