@@ -44,6 +44,8 @@ body {
   text-align: center;
   width: 100%;
   max-width: 680px;
+  /* keep the whole column on screen on short viewports */
+  max-width: min(680px, calc((100dvh - 220px) * (640 / 720)));
 }
 
 h1 {
@@ -144,66 +146,6 @@ canvas {
 }
 .mute-btn:hover { background: rgba(170,240,255,.15); box-shadow: 0 0 12px rgba(170,240,255,.3); }
 
-/* ---------- Touch controls (shown on touch devices / small screens) ---------- */
-.touch-controls {
-  display: none;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  gap: 12px;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.touch-controls.visible { display: flex; }
-
-.tc-group {
-  display: flex;
-  gap: 10px;
-}
-.tc-btn {
-  min-width: 64px;
-  height: 64px;
-  border-radius: 14px;
-  font-size: 1.6rem;
-  font-weight: bold;
-  font-family: 'Courier New', monospace;
-  background: rgba(255,255,255,.08);
-  color: #aaf0ff;
-  border: 2px solid rgba(170,240,255,.35);
-  cursor: pointer;
-  touch-action: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 0 rgba(0,0,0,.4);
-  transition: transform .05s ease, background .1s ease;
-}
-.tc-btn:active, .tc-btn.pressed {
-  transform: translateY(3px);
-  background: rgba(170,240,255,.3);
-  box-shadow: 0 1px 0 rgba(0,0,0,.4);
-}
-.tc-btn.small {
-  min-width: 52px;
-  height: 52px;
-  font-size: 1.1rem;
-}
-.tc-btn.fire {
-  min-width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  font-size: 1.1rem;
-  color: #0b0f2a;
-  background: linear-gradient(180deg, #ff6b6b, #e63946);
-  border-color: #ff9a9a;
-  box-shadow: 0 6px 0 #b3252f, 0 0 20px rgba(255,107,107,.5);
-}
-.tc-btn.fire:active, .tc-btn.fire.pressed {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 #b3252f;
-}
-.tc-btn.back { color: #ffb703; border-color: rgba(255,183,3,.4); }
-
 .touch-hint {
   display: none;
   color: #7f8bb3;
@@ -213,7 +155,6 @@ canvas {
 }
 
 @media (pointer: coarse), (max-width: 860px) {
-  .touch-controls { display: flex; }
   .controls { display: none; }
 }
 @media (pointer: coarse) {
@@ -225,10 +166,7 @@ canvas {
   body { padding: 4px; }
   h1 { font-size: 1.3rem; letter-spacing: 6px; margin-bottom: 6px; }
   .hud { font-size: .75rem; padding: 5px 8px; }
-  .game-wrap { max-width: 92vw; }
-  .tc-btn { min-width: 52px; height: 52px; font-size: 1.3rem; }
-  .tc-btn.fire { min-width: 76px; height: 76px; font-size: .9rem; }
-  .touch-controls { margin-top: 6px; }
+  .game-wrap { max-width: 92vw; max-width: min(92vw, calc((100dvh - 110px) * (640 / 720))); }
 }
   /* ---------- Options menu ---------- */
   .options-btn {
@@ -308,3 +246,54 @@ canvas {
     transition: all .15s ease;
   }
   .options-close:hover { background: rgba(170,240,255,.15); box-shadow: 0 0 12px rgba(170,240,255,.3); }
+
+/* ---------- Mobile pause menu (touch devices can't press Enter / P) ---------- */
+.pause-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,6,15,.75);
+  backdrop-filter: blur(3px);
+}
+.pause-menu[hidden] { display: none; }
+
+.pause-panel {
+  width: min(80vw, 300px);
+  background: rgba(10,14,40,.96);
+  border: 2px solid rgba(255,213,79,.5);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(255,213,79,.25);
+  padding: 24px 24px 20px;
+  text-align: center;
+  color: #aaf0ff;
+  font-family: 'Courier New', monospace;
+}
+.pause-panel h2 {
+  color: #ffd54f;
+  letter-spacing: 6px;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+  text-shadow: 0 0 12px rgba(255,213,79,.6);
+}
+.pause-panel button {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  background: rgba(255,255,255,.06);
+  color: #aaf0ff;
+  border: 1px solid rgba(170,240,255,.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all .15s ease;
+}
+.pause-panel button:active { background: rgba(170,240,255,.3); transform: translateY(1px); }
+.pause-panel button:hover { background: rgba(170,240,255,.15); }
+.pause-panel button:last-child { margin-bottom: 0; }

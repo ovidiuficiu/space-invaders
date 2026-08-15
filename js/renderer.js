@@ -209,13 +209,13 @@ export class Renderer {
 
         // Title
         ctx.fillStyle = '#39ff8c';
-        ctx.font = 'bold 42px "Courier New", monospace';
+        ctx.font = 'bold 46px "Courier New", monospace';
         ctx.shadowColor = '#39ff8c'; ctx.shadowBlur = 18;
-        ctx.fillText('SPACE INVADERS', W / 2, 92);
+        ctx.fillText('SPACE INVADERS', W / 2, 104);
         ctx.shadowBlur = 0;
 
-        const panelW = 420, panelH = 320;
-        const px = (W - panelW) / 2, py = 130;
+        const panelW = 460, panelH = 360;
+        const px = (W - panelW) / 2, py = 150;
 
         // ---------- Step 1: pick difficulty ----------
         if (menuStep === 0) {
@@ -226,40 +226,40 @@ export class Renderer {
             ctx.strokeRect(px, py, panelW, panelH);
 
             ctx.fillStyle = '#aaf0ff';
-            ctx.font = 'bold 22px "Courier New", monospace';
+            ctx.font = 'bold 26px "Courier New", monospace';
             ctx.fillText('SELECT DIFFICULTY', W / 2, py + 34);
 
-            const itemH = 62, startY = py + 62;
+            const itemH = 76, startY = py + 92;
             DIFFICULTIES.forEach((d, i) => {
                 const y = startY + i * itemH;
                 const selected = i === difficultyIdx;
                 if (selected) {
                     ctx.fillStyle = 'rgba(57,255,140,.12)';
-                    ctx.fillRect(px + 14, y - 18, panelW - 28, 44);
+                    ctx.fillRect(px + 14, y - 28, panelW - 28, 44);
                     ctx.strokeStyle = d.color;
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(px + 14, y - 18, panelW - 28, 44);
+                    ctx.strokeRect(px + 14, y - 28, panelW - 28, 44);
                 }
                 ctx.textAlign = 'left';
                 ctx.fillStyle = selected ? d.color : '#7f8bb3';
-                ctx.font = (selected ? 'bold ' : '') + '18px "Courier New", monospace';
+                ctx.font = (selected ? 'bold ' : '') + '24px "Courier New", monospace';
                 ctx.fillText((selected ? '▶ ' : '   ') + d.name, px + 32, y);
-                ctx.font = '12px "Courier New", monospace';
+                ctx.font = '17px "Courier New", monospace';
                 ctx.fillStyle = selected ? 'rgba(170,240,255,.9)' : 'rgba(127,139,179,.6)';
-                ctx.fillText(d.desc, px + 150, y);
+                ctx.fillText(d.desc, px + 190, y);
             });
             ctx.textAlign = 'center';
 
             if (Math.floor(state.time / 30) % 2 === 0) {
                 ctx.fillStyle = '#39ff8c';
-                ctx.font = 'bold 16px "Courier New", monospace';
+                ctx.font = 'bold 18px "Courier New", monospace';
                 ctx.shadowColor = '#39ff8c'; ctx.shadowBlur = 10;
-                ctx.fillText('PRESS ENTER TO CONTINUE', W / 2, py + panelH + 28);
+                ctx.fillText('TAP / ENTER TO CONTINUE', W / 2, py + panelH + 34);
                 ctx.shadowBlur = 0;
             }
             ctx.fillStyle = '#7f8bb3';
-            ctx.font = '13px "Courier New", monospace';
-            ctx.fillText('↑ ↓ choose difficulty     Enter next', W / 2, H - 20);
+            ctx.font = '15px "Courier New", monospace';
+            ctx.fillText('↑ ↓ choose · tap / Enter to continue', W / 2, H - 18);
         }
 
         // ---------- Step 2: pick superpower ----------
@@ -271,51 +271,47 @@ export class Renderer {
             ctx.strokeRect(px, py, panelW, panelH);
 
             ctx.fillStyle = '#c792ea';
-            ctx.font = 'bold 22px "Courier New", monospace';
+            ctx.font = 'bold 26px "Courier New", monospace';
             ctx.fillText('SELECT SUPERPOWER', W / 2, py + 34);
 
             // show which difficulty this is for
-            ctx.font = '14px "Courier New", monospace';
+            ctx.font = '18px "Courier New", monospace';
             ctx.fillStyle = currentDiff.color;
             ctx.fillText('for ' + currentDiff.name + ' difficulty', W / 2, py + 56);
 
             const powers = availablePowers;
-            const itemH = 52, startY = py + 82;
+            const itemH = 58, startY = py + 86;
             powers.forEach((p, i) => {
                 const y = startY + i * itemH;
                 const selected = p.id === currentSuper.id;
                 if (selected) {
                     ctx.fillStyle = 'rgba(199,146,234,.12)';
-                    ctx.fillRect(px + 14, y - 17, panelW - 28, 40);
+                    ctx.fillRect(px + 14, y - 26, panelW - 28, 40);
                     ctx.strokeStyle = p.color;
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(px + 14, y - 17, panelW - 28, 40);
+                    ctx.strokeRect(px + 14, y - 26, panelW - 28, 40);
                 }
                 ctx.textAlign = 'left';
                 ctx.fillStyle = selected ? p.color : '#7f8bb3';
-                ctx.font = (selected ? 'bold ' : '') + '17px "Courier New", monospace';
+                ctx.font = (selected ? 'bold ' : '') + '23px "Courier New", monospace';
                 ctx.fillText((selected ? '▶ ' : '   ') + p.name, px + 32, y);
-                ctx.font = '12px "Courier New", monospace';
+                ctx.font = '17px "Courier New", monospace';
                 ctx.fillStyle = selected ? 'rgba(170,240,255,.9)' : 'rgba(127,139,179,.6)';
-                ctx.fillText(p.desc, px + 170, y);
+                ctx.fillText(p.desc, px + 190, y);
             });
             ctx.textAlign = 'center';
 
             if (Math.floor(state.time / 30) % 2 === 0) {
                 ctx.fillStyle = '#39ff8c';
-                ctx.font = 'bold 16px "Courier New", monospace';
+                ctx.font = 'bold 18px "Courier New", monospace';
                 ctx.shadowColor = '#39ff8c'; ctx.shadowBlur = 10;
-                ctx.fillText('PRESS ENTER TO START', W / 2, py + panelH + 28);
+                ctx.fillText('TAP / ENTER TO START', W / 2, py + panelH + 34);
                 ctx.shadowBlur = 0;
             }
             ctx.fillStyle = '#7f8bb3';
-            ctx.font = '13px "Courier New", monospace';
-            ctx.fillText('↑ ↓ choose superpower     Enter start     Backspace back', W / 2, H - 20);
+            ctx.font = '15px "Courier New", monospace';
+            ctx.fillText('↑ ↓ choose · tap / Enter to start · Backspace back', W / 2, H - 18);
         }
-
-        ctx.fillStyle = '#ff5f8f';
-        ctx.font = '12px "Courier New", monospace';
-        ctx.fillText('Shoot the UFO to catch a powerup:  T triple   S split   B bounce   P pierce   R rapid   1 life', W / 2, H - 42);
     }
 
     drawPauseScreen() {

@@ -2,7 +2,7 @@
 
 // Canvas / game dimensions
 export const W = 640;
-export const H = 560;
+export const H = 720;
 
 // localStorage keys
 export const STORAGE_KEYS = {

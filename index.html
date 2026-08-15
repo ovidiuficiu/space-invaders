@@ -19,28 +19,15 @@
       <div>LIVES <span class="lives" id="lives">3</span></div>
     </div>
     <div class="stage">
-      <canvas id="game" width="640" height="560"></canvas>
+      <canvas id="game" width="640" height="720"></canvas>
       <button id="pauseBtn" class="pause-btn" aria-label="Pause">⏸</button>
-    </div>
-
-    <div class="touch-controls" id="touchControls">
-      <div class="tc-group">
-        <button class="tc-btn" id="btnUp" aria-label="Up">▲</button>
-        <button class="tc-btn" id="btnDown" aria-label="Down">▼</button>
-        <button class="tc-btn" id="btnLeft" aria-label="Left">◀</button>
-        <button class="tc-btn" id="btnRight" aria-label="Right">▶</button>
-        <button class="tc-btn small back" id="btnBack" aria-label="Back">BACK</button>
-      </div>
-      <div class="tc-group">
-        <button class="tc-btn fire" id="btnFire" aria-label="Fire">FIRE</button>
-      </div>
     </div>
 
     <div class="controls">
       <b>&larr; &rarr;</b> move &nbsp;|&nbsp; <b>Space</b> fire &nbsp;|&nbsp; <b>P</b> pause &nbsp;|&nbsp; <b>M</b> sound &nbsp;|&nbsp; <b>Enter</b> start / restart
     </div>
     <div class="touch-hint">
-      drag to move · tap <b>FIRE</b> to shoot · <b>▲▼</b> choose in menus
+      drag to move · auto-fire
     </div>
     <button id="muteBtn" class="mute-btn">🔊 Sound On</button>
     <button id="optionsBtn" class="options-btn" aria-label="Options">⚙ OPTIONS</button>
@@ -53,6 +40,15 @@
       <input type="range" id="musicVol" min="0" max="100" step="5" value="60">
       <div><span id="musicVolLabel" class="vol-label">60%</span></div>
       <button id="optionsClose" class="options-close">CLOSE</button>
+    </div>
+  </div>
+
+  <div id="pauseMenu" class="pause-menu" hidden>
+    <div class="pause-panel">
+      <h2>PAUSED</h2>
+      <button id="pauseResume">▶ RESUME</button>
+      <button id="pauseRestart">↻ RESTART</button>
+      <button id="pauseQuit">⌂ MAIN MENU</button>
     </div>
   </div>
 

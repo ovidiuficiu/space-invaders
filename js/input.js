@@ -9,21 +9,17 @@ export class InputManager {
         this.steerX = null; // canvas-space X while dragging, else null
         this.cb = callbacks;
 
-        this.btnUp = document.getElementById('btnUp');
-        this.btnDown = document.getElementById('btnDown');
-        this.btnLeft = document.getElementById('btnLeft');
-        this.btnRight = document.getElementById('btnRight');
-        this.btnFire = document.getElementById('btnFire');
-        this.btnBack = document.getElementById('btnBack');
         this.btnPause = document.getElementById('pauseBtn');
-        this.touchControls = document.getElementById('touchControls');
+
+        // true on touch devices / small windows (used by Game for auto-fire)
+        this.isTouch = window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 860;
+        window.addEventListener('resize', () => {
+            this.isTouch = window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 860;
+        });
 
         this.bindKeyboard();
-        this.bindHoldButtons();
         this.bindPause();
         this.bindCanvas();
-        this.updateTouchControls();
-        window.addEventListener('resize', () => this.updateTouchControls());
     }
 
     bindKeyboard() {
@@ -69,39 +65,6 @@ export class InputManager {
         });
     }
 
-    // hold-to-press buttons (pointer events unify mouse + touch)
-    bindHold(el, onDown, onUp) {
-        el.addEventListener('pointerdown', (e) => {
-            e.preventDefault();
-            try { el.setPointerCapture && el.setPointerCapture(e.pointerId); } catch (err) { }
-            el.classList.add('pressed');
-            onDown();
-        });
-        const release = () => { el.classList.remove('pressed'); onUp && onUp(); };
-        el.addEventListener('pointerup', release);
-        el.addEventListener('pointercancel', release);
-        el.addEventListener('lostpointercapture', release);
-    }
-
-    bindHoldButtons() {
-        this.bindHold(this.btnLeft, () => { this.keys.left = true; }, () => { this.keys.left = false; });
-        this.bindHold(this.btnRight, () => { this.keys.right = true; }, () => { this.keys.right = false; });
-
-        // FIRE: in-game = shoot; in menu / game over = confirm
-        this.bindHold(this.btnFire, () => {
-            if (this.cb.isPlaying && this.cb.isPlaying()) {
-                this.keys.space = true;
-            } else if (this.cb.onConfirm) {
-                this.cb.onConfirm();
-            }
-        }, () => { this.keys.space = false; });
-
-        // menu navigation buttons
-        this.bindHold(this.btnUp, () => { if (this.cb.isMenu && this.cb.isMenu() && this.cb.onNavigate) this.cb.onNavigate(-1); });
-        this.bindHold(this.btnDown, () => { if (this.cb.isMenu && this.cb.isMenu() && this.cb.onNavigate) this.cb.onNavigate(1); });
-        this.bindHold(this.btnBack, () => { if (this.cb.onBack) this.cb.onBack(); });
-    }
-
     bindPause() {
         this.btnPause.addEventListener('pointerdown', (e) => {
             e.preventDefault();
@@ -118,7 +81,10 @@ export class InputManager {
             if (this.cb.onAnyKey) this.cb.onAnyKey();
             const rect = canvas.getBoundingClientRect();
             this.steerX = (e.touches[0].clientX - rect.left) * (W / rect.width);
-            if (this.cb.isGameOver && this.cb.isGameOver()) {
+            if (this.cb.isMenu && this.cb.isMenu() && this.cb.onConfirm) {
+                // tap in the start menu -> advance selection (no buttons on mobile)
+                this.cb.onConfirm();
+            } else if (this.cb.isGameOver && this.cb.isGameOver()) {
                 setTimeout(() => { if (this.cb.isGameOver() && this.cb.onConfirm) this.cb.onConfirm(); }, 200);
             }
         }, { passive: false });
@@ -135,14 +101,5 @@ export class InputManager {
             e.preventDefault();
             this.steerX = null;
         }, { passive: false });
-    }
-
-    // show touch controls on coarse-pointer (touch) devices, else on small windows
-    updateTouchControls() {
-        this.touchControls.classList.toggle('visible', window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 860);
-    }
-
-    updateBackButton(visible) {
-        if (this.btnBack) this.btnBack.style.display = visible ? 'flex' : 'none';
     }
 }

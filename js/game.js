@@ -1,4 +1,5 @@
-import { W, H, DIFFICULTIES, SUPERPOWERS, POWERUP_TYPES, POWERUP_DURATION, STORAGE_KEYS } from './config.js';
+import { W, H, POWERUP_TYPES, POWERUP_DURATION, STORAGE_KEYS } from './config.js';
+import { Menu } from './menu.js';
 import { AudioManager } from './audio.js';
 import { InputManager } from './input.js';
 import { Renderer } from './renderer.js';
@@ -54,19 +55,16 @@ export class Game {
         this.invaderShots = [];
         this.powerups = [];
 
-        // menu state
-        this.difficultyIdx = 1;
-        this.superIdx = 0;
-        this.menuStep = 0; // 0 = difficulty, 1 = superpower
+        // menu state (difficulty / superpower selection)
+        this.menu = new Menu();
+
+        // touch devices auto-fire continuously during gameplay
+        this.autoFire = this.input.isTouch;
+        window.addEventListener('resize', () => { this.autoFire = this.input.isTouch; });
 
         // scoring
         this.nextLifeScore = 1000;
     }
-
-    // ---- menu data helpers ----
-    currentDiff() { return DIFFICULTIES[this.difficultyIdx]; }
-    currentSuper() { return SUPERPOWERS[this.superIdx]; }
-    availablePowers() { return this.currentDiff().powers.map(i => SUPERPOWERS[i]); }
 
     // ---- input callbacks (InputManager only routes through these) ----
     inputCallbacks() {
@@ -85,7 +83,19 @@ export class Game {
     }
 
     togglePause() {
-        if (this.state.running && !this.state.gameOver) this.state.paused = !this.state.paused;
+        if (this.state.running && !this.state.gameOver) {
+            this.state.paused = !this.state.paused;
+            if (this.state.paused) this.showPauseMenu();
+            else this.hidePauseMenu();
+        }
+    }
+
+    // mobile pause menu (touch devices can't press Enter / P)
+    showPauseMenu() {
+        if (this.pauseMenu && this.input.isTouch) this.pauseMenu.hidden = false;
+    }
+    hidePauseMenu() {
+        if (this.pauseMenu) this.pauseMenu.hidden = true;
     }
 
     toggleMute() {
@@ -103,21 +113,14 @@ export class Game {
 
     // ---- firing ----
     fire() {
-        const shots = this.player.fire(this.currentSuper());
+        const shots = this.player.fire(this.menu.currentSuper());
         this.playerShots.push(...shots);
         this.audio.shoot();
     }
 
-    updatePlayer() {
-        this.player.update(this.input.keys);
-        if (this.input.keys.space && this.player.cooldown === 0) {
-            this.fire();
-        }
-    }
-
     updateInvaders() {
         const { reachedPlayer } = this.grid.update(
-            this.currentDiff(),
+            this.menu.currentDiff(),
             this.state.level,
             this.player.y,
             (shot) => this.invaderShots.push(shot)
@@ -284,7 +287,7 @@ export class Game {
     // ---- game flow ----
     resetLevel() {
         this.grid.reset();
-        this.grid.speed = this.currentDiff().speed + (this.state.level - 1) * 0.15;
+        this.grid.speed = this.menu.currentDiff().speed + (this.state.level - 1) * 0.15;
         this.shields.build();
         this.playerShots = [];
         this.invaderShots = [];
@@ -293,6 +296,7 @@ export class Game {
 
     startGame() {
         this.audio.ensure();
+        this.hidePauseMenu();
         this.state.running = true;
         this.state.gameOver = false;
         this.state.paused = false;
@@ -303,11 +307,11 @@ export class Game {
         this.dom.score.textContent = '0000';
         this.dom.lives.textContent = '3';
         this.dom.level.textContent = '1';
-        this.dom.diff.textContent = this.currentDiff().name;
-        this.dom.super.textContent = this.currentSuper().name;
-        this.dom.super.style.color = this.currentSuper().color;
+        this.dom.diff.textContent = this.menu.currentDiff().name;
+        this.dom.super.textContent = this.menu.currentSuper().name;
+        this.dom.super.style.color = this.menu.currentSuper().color;
         this.player.x = W / 2 - this.player.w / 2;
-        this.player.shield = this.currentSuper().id === 'shield' ? 2 : 0;
+        this.player.shield = this.menu.currentSuper().id === 'shield' ? 2 : 0;
         this.player.powerup = null;
         this.player.powerupTime = 0;
         this.playerShots = [];
@@ -326,67 +330,62 @@ export class Game {
     endGame() {
         this.state.gameOver = true;
         this.state.running = false;
+        this.hidePauseMenu();
         this.updateHigh();
         this.dom.high.textContent = String(this.state.high).padStart(4, '0');
         this.particles.spawn(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff6b6b', 40, 5);
         this.updateBackBtn();
     }
 
-    // ---- menu ----
+    // ---- menu (state + selection logic lives in the Menu class) ----
     menuNavigate(dir) {
         if (this.state.running || this.state.gameOver) return;
-        if (this.menuStep === 0) {
-            this.difficultyIdx = (this.difficultyIdx + dir + DIFFICULTIES.length) % DIFFICULTIES.length;
-            this.dom.diff.textContent = this.currentDiff().name;
-            // snap superpower to the first one available for this difficulty
-            const firstPower = this.availablePowers()[0];
-            if (firstPower.id !== this.currentSuper().id) {
-                this.superIdx = SUPERPOWERS.indexOf(firstPower);
-            }
-            this.dom.super.textContent = this.currentSuper().name;
-            this.dom.super.style.color = this.currentSuper().color;
-        } else {
-            const powers = this.availablePowers();
-            const cur = powers.findIndex(p => p.id === this.currentSuper().id);
-            const next = powers[(cur + dir + powers.length) % powers.length];
-            this.superIdx = SUPERPOWERS.indexOf(next);
-            this.dom.super.textContent = next.name;
-            this.dom.super.style.color = next.color;
-        }
-        this.updateBackBtn();
+        this.menu.navigate(dir);
+        this.syncMenuDOM();
     }
 
     menuConfirm() {
         if (this.state.running && !this.state.gameOver) {
-            // In-game Enter: abandon the current run and restart the whole flow from the start menu
-            this.state.running = false;
-            this.state.paused = false;
-            this.state.gameOver = false;
-            this.menuStep = 0;
-            this.updateBackBtn();
+            // In-game Enter: abandon the current run and restart from the start menu
+            this.quitToMenu();
         } else if (this.state.gameOver) {
             this.state.gameOver = false;
-            this.menuStep = 0;
+            this.menu.reset();
             this.updateBackBtn();
         } else if (!this.state.running) {
-            if (this.menuStep === 0) {
-                this.menuStep = 1; // difficulty chosen -> show superpowers
-                this.updateBackBtn();
-            } else {
+            if (this.menu.confirm()) {
                 this.startGame();
+            } else {
+                this.syncMenuDOM();
+                this.updateBackBtn();
             }
         }
     }
 
     menuBack() {
-        if (!this.state.running && !this.state.gameOver && this.menuStep === 1) {
-            this.menuStep = 0;
+        if (!this.state.running && !this.state.gameOver && this.menu.back()) {
             this.updateBackBtn();
         }
     }
 
+    // abandon the current run and return to the start menu
+    quitToMenu() {
+        this.state.running = false;
+        this.state.paused = false;
+        this.state.gameOver = false;
+        this.menu.reset();
+        this.hidePauseMenu();
+        this.updateBackBtn();
+    }
+
+    // mirror the selected difficulty/superpower into the HUD
+    syncMenuDOM() {
+        this.dom.diff.textContent = this.menu.currentDiff().name;
+        this.dom.super.textContent = this.menu.currentSuper().name;
+        this.dom.super.style.color = this.menu.currentSuper().color;
+    }
+
     updateBackBtn() {
-        this.input.updateBackButton(!this.state.running && !this.state.gameOver && this.menuStep === 1);
         if (this.optionsBtn) this.optionsBtn.style.display = this.state.running ? 'none' : 'inline-block';
     }
 
@@ -402,9 +401,9 @@ export class Game {
             powerups: this.powerups,
             particles: this.particles.particles,
             shields: this.shields.bunkers,
-            menuStep: this.menuStep,
-            difficultyIdx: this.difficultyIdx,
-            superIdx: this.superIdx
+            menuStep: this.menu.step,
+            difficultyIdx: this.menu.difficultyIdx,
+            superIdx: this.menu.superIdx
         };
     }
 
@@ -412,18 +411,20 @@ export class Game {
     loop() {
         this.state.time++;
         if (this.state.running && !this.state.paused && !this.state.gameOver) {
-            // touch steering
+            // steering: touch drag takes priority over keyboard
             if (this.input.steerX !== null) {
                 const target = this.input.steerX - this.player.w / 2;
                 const diff = target - this.player.x;
                 this.player.x += Math.sign(diff) * Math.min(Math.abs(diff), 7);
                 this.player.x = Math.max(10, Math.min(W - this.player.w - 10, this.player.x));
-                if (this.input.keys.space && this.player.cooldown === 0) {
-                    this.fire();
-                }
                 if (this.player.cooldown > 0) this.player.cooldown--;
             } else {
-                this.updatePlayer();
+                this.player.update(this.input.keys);
+            }
+
+            // firing: touch devices auto-fire continuously; desktop fires with Space
+            if (this.autoFire || this.input.keys.space) {
+                if (this.player.cooldown === 0) this.fire();
             }
             this.updateInvaders();
             this.updateUFO();
@@ -446,9 +447,9 @@ export class Game {
     // ---- init / run ----
     init() {
         this.dom.high.textContent = String(this.state.high).padStart(4, '0');
-        this.dom.diff.textContent = this.currentDiff().name;
-        this.dom.super.textContent = this.currentSuper().name;
-        this.dom.super.style.color = this.currentSuper().color;
+        this.dom.diff.textContent = this.menu.currentDiff().name;
+        this.dom.super.textContent = this.menu.currentSuper().name;
+        this.dom.super.style.color = this.menu.currentSuper().color;
 
         const muteBtn = document.getElementById('muteBtn');
         muteBtn.textContent = this.audio.isMuted ? '🔇 Sound Off' : '🔊 Sound On';
@@ -471,6 +472,17 @@ export class Game {
         this.optionsOverlay.addEventListener('click', (e) => {
             if (e.target === this.optionsOverlay) this.optionsOverlay.hidden = true;
         });
+
+        // mobile pause menu
+        this.pauseMenu = document.getElementById('pauseMenu');
+        const resumeBtn = document.getElementById('pauseResume');
+        const restartBtn = document.getElementById('pauseRestart');
+        const quitBtn = document.getElementById('pauseQuit');
+        if (resumeBtn) resumeBtn.addEventListener('click', () => this.togglePause());
+        // restart returns to the difficulty / superpower selection so they can pick again
+        if (restartBtn) restartBtn.addEventListener('click', () => this.quitToMenu());
+        if (quitBtn) quitBtn.addEventListener('click', () => this.quitToMenu());
+        this.hidePauseMenu();
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Escape' && this.optionsOverlay && !this.optionsOverlay.hidden) {
                 this.optionsOverlay.hidden = true;
