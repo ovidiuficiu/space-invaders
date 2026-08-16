@@ -6,7 +6,8 @@ HTML, CSS, and JavaScript. No frameworks, no bundlers, no dependencies.
 ## ✨ Features
 
 - **Classic arcade gameplay** — squadrons of invaders, destructible shields, and a sneaky UFO
-- **5 difficulty levels** — from a chill EASY pace to full-on INSANE bullet hell
+- **4 difficulty levels** — from a chill EASY pace to full-on INSANE bullet hell
+- **4 ship types** — choose a fast interceptor, spread-fire bomber, armored guardian, or heavy-shot pulse ship
 - **Superpowers** — BLAZING, TRIPLE, BOUNCE, PIERCE, and SHIELD
 - **Pickups** — collect powerups (and the occasional 1UP) dropped by the special ship
 - **Full sound** — synth-based audio effects and music, all generated in the browser

@@ -27,6 +27,13 @@ export const SUPERPOWERS = [
     { id: 'shield', name: 'SHIELD', color: '#ffd54f', desc: 'start with 2 hit-shields' }
 ];
 
+export const SHIPS = [
+    { id: 'interceptor', name: 'INTERCEPTOR', color: '#7de2ff', desc: 'fast and precise', speed: 7, cooldownMax: 18, shotAngles: [0], armor: 0 },
+    { id: 'bomber', name: 'BOMBER', color: '#ff8a3d', desc: 'slow triple spread', speed: 4.2, cooldownMax: 30, shotAngles: [-0.24, 0, 0.24], armor: 0 },
+    { id: 'guardian', name: 'GUARDIAN', color: '#ffd54f', desc: 'armored frontline', speed: 4.8, cooldownMax: 25, shotAngles: [0], armor: 2 },
+    { id: 'pulse', name: 'PULSE', color: '#ff5f8f', desc: 'wide heavy shots', speed: 5.5, cooldownMax: 24, shotAngles: [0], shotW: 7, shotH: 18, armor: 0 }
+];
+
 // Temporary powerups dropped by the special ship
 export const POWERUP_TYPES = [
     { id: 'triple', label: 'T', color: '#39ff8c', name: 'TRIPLE' },

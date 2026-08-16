@@ -26,7 +26,7 @@ export class Projectile {
             Math.sin(angle) * SHOT_SPEED,
             -Math.cos(angle) * SHOT_SPEED,
             {
-                w: 4, h: 14,
+                w: opts.w ?? 4, h: opts.h ?? 14,
                 bounce: opts.bounce,
                 bounces: opts.bounce ? 2 : 0,
                 split: opts.split,

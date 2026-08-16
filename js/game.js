@@ -255,6 +255,12 @@ export class Game {
             this.invaderShots = [];
             return;
         }
+        if (this.player.armor > 0) {
+            this.player.armor--;
+            this.particles.spawn(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, this.player.ship.color, 20, 4);
+            this.invaderShots = [];
+            return;
+        }
         this.state.lives--;
         this.dom.lives.textContent = String(this.state.lives);
         this.particles.spawn(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#39ff8c', 30, 5);
@@ -313,6 +319,7 @@ export class Game {
         this.dom.diff.textContent = this.menu.currentDiff().name;
         this.dom.super.textContent = this.menu.currentSuper().name;
         this.dom.super.style.color = this.menu.currentSuper().color;
+        this.player.configure(this.menu.currentShip());
         this.player.x = W / 2 - this.player.w / 2;
         this.player.shield = this.menu.currentSuper().id === 'shield' ? 2 : 0;
         this.player.activePowers.clear();
@@ -356,6 +363,8 @@ export class Game {
         if (!hit) return; // tapping outside the rows does nothing
         if (this.menu.step === 0) {
             this.menu.selectDifficulty(hit.index);
+        } else if (this.menu.step === 1) {
+            this.menu.selectShip(hit.index);
         } else {
             this.menu.selectSuper(hit.id);
         }
@@ -417,7 +426,7 @@ export class Game {
         const inMenu = !this.state.running && !this.state.gameOver;
         this.menuControls.hidden = !(inMenu && this.input.isTouch);
         if (this.menuBackBtn) {
-            this.menuBackBtn.style.display = (inMenu && this.menu.step === 1) ? '' : 'none';
+            this.menuBackBtn.style.display = (inMenu && this.menu.step > 0) ? '' : 'none';
         }
     }
 
@@ -435,6 +444,7 @@ export class Game {
             shields: this.shields.bunkers,
             menuStep: this.menu.step,
             difficultyIdx: this.menu.difficultyIdx,
+            shipIdx: this.menu.shipIdx,
             superIdx: this.menu.superIdx,
             isTouch: this.input.isTouch
         };

@@ -1,9 +1,9 @@
-import { W, H, PLAYER } from '../config.js';
+import { W, H, PLAYER, SHIPS } from '../config.js';
 import { Projectile } from './Projectile.js';
 
 // ---------- Player ----------
 export class Player {
-    constructor() {
+    constructor(ship = SHIPS[0]) {
         this.w = PLAYER.w;
         this.h = PLAYER.h;
         this.x = W / 2;
@@ -12,7 +12,18 @@ export class Player {
         this.cooldown = 0;
         this.cooldownMax = PLAYER.cooldownMax;
         this.shield = 0;        // hit-shields from SHIELD superpower
+        this.armor = 0;
+        this.ship = ship;
         this.activePowers = new Map(); // stacked timed powerups: id -> remaining frames
+    }
+
+    configure(ship) {
+        this.ship = ship;
+        this.speed = ship.speed;
+        this.cooldownMax = ship.cooldownMax;
+        this.armor = ship.armor;
+        this.w = PLAYER.w;
+        this.h = PLAYER.h;
     }
 
     center() {
@@ -41,10 +52,11 @@ export class Player {
             this.x + this.w / 2 - 2,
             this.y,
             angle,
-            { bounce, split, pierce }
+            { bounce, split, pierce, w: this.ship.shotW, h: this.ship.shotH }
         );
 
-        const shots = triple ? [mkShot(-0.28), mkShot(0), mkShot(0.28)] : [mkShot(0)];
+        const angles = triple ? [-0.28, 0, 0.28] : this.ship.shotAngles;
+        const shots = angles.map(mkShot);
         this.cooldown = rapid ? 10 : this.cooldownMax;
         return shots;
     }

@@ -1,10 +1,11 @@
-import { W, H, DIFFICULTIES, SUPERPOWERS, POWERUP_TYPES, POWERUP_DURATION, SPRITES } from './config.js';
+import { W, H, DIFFICULTIES, SHIPS, SUPERPOWERS, POWERUP_TYPES, POWERUP_DURATION, SPRITES } from './config.js';
 
 // Start-menu layout. Shared between drawing and tap-to-select hit-testing so
 // the tappable rows always match what's on screen.
 const MENU = {
-    panelW: 460, panelH: 360, py: 150,
+    panelW: 460, panelH: 400, py: 130,
     difficulty: { itemH: 76, startY: 92, boxTop: -28, boxH: 44 },
+    ship: { itemH: 58, startY: 86, boxTop: -26, boxH: 40 },
     superpower: { itemH: 58, startY: 86, boxTop: -26, boxH: 40 }
 };
 
@@ -16,6 +17,7 @@ export class Renderer {
 
     // ---- helpers ----
     currentDiff(difficultyIdx) { return DIFFICULTIES[difficultyIdx]; }
+    currentShip(shipIdx) { return SHIPS[shipIdx]; }
     currentSuper(superIdx) { return SUPERPOWERS[superIdx]; }
     availablePowers() { return SUPERPOWERS; }
 
@@ -34,7 +36,7 @@ export class Renderer {
     // ---- main frame ----
     render(view) {
         const ctx = this.ctx;
-        const { state, player, grid, ufo, playerShots, invaderShots, powerups, particles, shields, menuStep, difficultyIdx, superIdx, isTouch } = view;
+        const { state, player, grid, ufo, playerShots, invaderShots, powerups, particles, shields, menuStep, difficultyIdx, shipIdx, superIdx, isTouch } = view;
 
         ctx.clearRect(0, 0, W, H);
         this.drawGrid();
@@ -72,7 +74,7 @@ export class Renderer {
         if (state.running && player.activePowers.size > 0) this.drawPowerupTimer(player);
 
         // overlays
-        if (!state.running && !state.gameOver) this.drawStartScreen(state, menuStep, difficultyIdx, superIdx, isTouch);
+        if (!state.running && !state.gameOver) this.drawStartScreen(state, menuStep, difficultyIdx, shipIdx, superIdx, isTouch);
         if (state.paused && state.running) this.drawPauseScreen();
         if (state.gameOver) this.drawGameOverScreen(state);
     }
@@ -89,7 +91,7 @@ export class Renderer {
 
     drawPlayer(player, state) {
         const ctx = this.ctx;
-        ctx.fillStyle = '#39ff8c';
+        ctx.fillStyle = player.ship.color;
         // main body
         ctx.fillRect(player.x, player.y + 12, player.w, 6);
         // cannon
@@ -97,10 +99,22 @@ export class Renderer {
         // fins
         ctx.fillRect(player.x + 4, player.y + 16, 6, 8);
         ctx.fillRect(player.x + player.w - 10, player.y + 16, 6, 8);
+        if (player.ship.id === 'bomber') {
+            ctx.fillStyle = player.ship.color;
+            ctx.fillRect(player.x + 1, player.y + 20, 10, 5);
+            ctx.fillRect(player.x + player.w - 11, player.y + 20, 10, 5);
+        } else if (player.ship.id === 'guardian') {
+            ctx.strokeStyle = player.ship.color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(player.x - 2, player.y + 8, player.w + 4, player.h - 4);
+        } else if (player.ship.id === 'pulse') {
+            ctx.fillStyle = player.ship.color;
+            ctx.fillRect(player.x + 7, player.y + 8, player.w - 14, 4);
+        }
         // glow
-        ctx.shadowColor = '#39ff8c';
+        ctx.shadowColor = player.ship.color;
         ctx.shadowBlur = 10;
-        ctx.fillStyle = '#aaffcc';
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(player.x + player.w / 2 - 1, player.y + 2, 2, 4);
         ctx.shadowBlur = 0;
 
@@ -215,9 +229,10 @@ export class Renderer {
         ctx.textBaseline = 'alphabetic';
     }
 
-    drawStartScreen(state, menuStep, difficultyIdx, superIdx, isTouch) {
+    drawStartScreen(state, menuStep, difficultyIdx, shipIdx, superIdx, isTouch) {
         const ctx = this.ctx;
         const currentDiff = this.currentDiff(difficultyIdx);
+        const currentShip = this.currentShip(shipIdx);
         const currentSuper = this.currentSuper(superIdx);
         const availablePowers = this.availablePowers(difficultyIdx);
 
@@ -281,7 +296,50 @@ export class Renderer {
             ctx.fillText(isTouch ? 'tap to highlight · swipe to browse' : '↑ ↓ choose · Enter to continue', W / 2, H - 18);
         }
 
-        // ---------- Step 2: pick superpower ----------
+        // ---------- Step 2: pick ship ----------
+        else if (menuStep === 1) {
+            ctx.fillStyle = 'rgba(10,14,40,.85)';
+            ctx.strokeStyle = 'rgba(125,226,255,.4)';
+            ctx.lineWidth = 1;
+            ctx.fillRect(px, py, panelW, panelH);
+            ctx.strokeRect(px, py, panelW, panelH);
+            ctx.fillStyle = '#7de2ff';
+            ctx.font = 'bold 26px "Courier New", monospace';
+            ctx.fillText('SELECT SHIP', W / 2, py + 34);
+            ctx.font = '18px "Courier New", monospace';
+            ctx.fillStyle = currentDiff.color;
+            ctx.fillText('for ' + currentDiff.name + ' difficulty', W / 2, py + 56);
+
+            const sm = MENU.ship;
+            SHIPS.forEach((ship, i) => {
+                const y = py + sm.startY + i * sm.itemH;
+                const selected = i === shipIdx;
+                if (selected) {
+                    ctx.fillStyle = 'rgba(125,226,255,.12)';
+                    ctx.fillRect(px + 14, y + sm.boxTop, panelW - 28, sm.boxH);
+                    ctx.strokeStyle = ship.color;
+                    ctx.strokeRect(px + 14, y + sm.boxTop, panelW - 28, sm.boxH);
+                }
+                ctx.textAlign = 'left';
+                ctx.fillStyle = selected ? ship.color : '#7f8bb3';
+                ctx.font = (selected ? 'bold ' : '') + '21px "Courier New", monospace';
+                ctx.fillText((selected ? '▶ ' : '   ') + ship.name, px + 32, y);
+                ctx.font = '17px "Courier New", monospace';
+                ctx.fillStyle = selected ? 'rgba(170,240,255,.9)' : 'rgba(127,139,179,.6)';
+                ctx.fillText(ship.desc, px + 220, y);
+            });
+            ctx.textAlign = 'center';
+            if (Math.floor(state.time / 30) % 2 === 0) {
+                ctx.fillStyle = '#39ff8c';
+                ctx.font = 'bold 18px "Courier New", monospace';
+                ctx.fillText(isTouch ? 'TAP A ROW · PRESS CONFIRM' : 'PRESS ENTER TO CONTINUE', W / 2, py + panelH + 34);
+            }
+            ctx.fillStyle = '#7f8bb3';
+            ctx.font = '15px "Courier New", monospace';
+            ctx.fillText(isTouch ? 'tap to highlight · swipe to browse' : '↑ ↓ choose · Enter to continue · Backspace back', W / 2, H - 18);
+        }
+
+        // ---------- Step 3: pick superpower ----------
         else {
             ctx.fillStyle = 'rgba(10,14,40,.85)';
             ctx.strokeStyle = 'rgba(199,146,234,.4)';
@@ -344,6 +402,13 @@ export class Renderer {
             return DIFFICULTIES.map((d, i) => {
                 const y = MENU.py + startY + i * itemH;
                 return { index: i, id: i, name: d.name, x: px + 14, y: y + boxTop, w: panelW - 28, h: boxH };
+            });
+        }
+        if (menuStep === 1) {
+            const { itemH, startY, boxTop, boxH } = MENU.ship;
+            return SHIPS.map((ship, i) => {
+                const y = MENU.py + startY + i * itemH;
+                return { index: i, id: ship.id, name: ship.name, x: px + 14, y: y + boxTop, w: panelW - 28, h: boxH };
             });
         }
         const { itemH, startY, boxTop, boxH } = MENU.superpower;
